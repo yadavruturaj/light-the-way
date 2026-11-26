@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Light the Way</title>
+  <meta name="description" content="One goal, one task a day. Light a lantern for every step toward your goal.">
+  <meta name="theme-color" content="#11162a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='9' y='5' width='14' height='3' rx='1' fill='%23ff8f4d'/%3E%3Crect x='7' y='8' width='18' height='19' rx='6' fill='%23ffc65c'/%3E%3Crect x='9' y='27' width='14' height='3' rx='1' fill='%23ff8f4d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="5" width="14" height="3" rx="1" fill="#ff8f4d"/><rect x="7" y="8" width="18" height="19" rx="6" fill="#ffc65c"/><rect x="9" y="27" width="14" height="3" rx="1" fill="#ff8f4d"/></svg>
+        Light the Way
+      </div>
+    </header>
+
+    <section class="quote" aria-label="Quote of the visit">
+      <p id="quote-text"></p>
+      <p id="quote-by"></p>
+    </section>
+
+    <main>
+      <!-- Step 1: describe the goal -->
+      <section id="setup" hidden>
+        <div class="stack">
+          <div>
+            <h1>What do you want to work toward?</h1>
+            <p class="lede">One goal at a time. Small daily steps build the habit.</p>
+          </div>
+          <form id="setup-form" class="stack" novalidate>
+            <div class="field">
+              <label for="goal-input">My goal</label>
+              <input id="goal-input" type="text" maxlength="140" placeholder="For example: Learn the basics of Python" autocomplete="off">
+              <p class="error" id="goal-error" hidden>Write your goal first.</p>
+            </div>
+            <div class="field">
+              <label for="why-input">Why it matters to me <span class="hint">(shown on hard days)</span></label>
+              <textarea id="why-input" maxlength="300" placeholder="For example: So I can build my own apps and grow my career"></textarea>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="minutes-select">Time each day</label>
+                <select id="minutes-select">
+                  <option value="5">5 minutes</option>
+                  <option value="10">10 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="20" selected>20 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="45">45 minutes</option>
+                  <option value="60">1 hour</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="days-select">Length of the plan</label>
+                <select id="days-select">
+                  <option value="7">1 week</option>
+                  <option value="14">2 weeks</option>
+                  <option value="21">3 weeks</option>
+                  <option value="30" selected>30 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label for="when-input">When I'll do it</label>
+                <input id="when-input" type="text" maxlength="60" placeholder="For example: 7am, after tea" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="where-input">Where I'll do it</label>
+                <input id="where-input" type="text" maxlength="60" placeholder="For example: at my desk" autocomplete="off">
+              </div>
+            </div>
+            <p class="hint">Picking a time and place makes you far more likely to follow through.</p>
+            <div class="actions">
+              <button type="submit" class="btn">Next: get my daily plan</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Step 2: get a plan from Claude and paste it back -->
+      <section id="plan" hidden>
+        <div class="stack">
+          <div>
+            <h1>Get your daily plan from Claude</h1>
+            <p class="lede">Three quick steps. You'll only do this once per goal.</p>
+          </div>
+
+          <div class="card stack">
+            <div class="step-head"><span class="step-num">1</span> Copy this request</div>
+            <pre class="prompt" id="prompt-text"></pre>
+            <div class="actions">
+              <button type="button" class="btn" id="copy-btn">Copy request</button>
+            </div>
+          </div>
+
+          <div class="card stack">
+            <div class="step-head"><span class="step-num">2</span> Paste it into Claude</div>
+            <p class="muted">Open <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai</a> in a new tab, paste the request and send it. Then copy Claude's whole reply.</p>
+          </div>
+
+          <div class="card stack">
+            <div class="step-head"><span class="step-num">3</span> Paste Claude's reply here</div>
+            <label for="paste-input" class="sr-only">Claude's reply</label>
+            <textarea id="paste-input" rows="7" placeholder="Day 1: ... | Tiny: ...&#10;Day 2: ... | Tiny: ..."></textarea>
+            <div id="parse-result" class="parse-result" aria-live="polite"></div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn" id="start-btn" disabled>Light my first lantern</button>
+            <button type="button" class="btn secondary" id="back-btn">Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Daily view -->
+      <section id="today" hidden>
+        <div class="stack">
+          <div>
+            <h1 id="goal-title"></h1>
+            <p class="lede" id="goal-why"></p>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><b id="stat-lit">0</b><span>Lit</span></div>
+            <div class="stat"><b id="stat-streak">0</b><span>Streak</span></div>
+            <div class="stat"><b id="stat-left">0</b><span>To go</span></div>
+          </div>
+
+          <div class="path-box" id="path-today"></div>
+
+          <p class="nudge" id="nudge" hidden></p>
+
+          <!-- Task not done yet today -->
+          <div class="card task-card" id="task-card">
+            <div class="day" id="task-day"></div>
+            <p class="task-text" id="task-text"></p>
+            <p class="tiny-box" id="task-tiny"></p>
+            <p class="plan-when" id="task-when"></p>
+            <div class="actions">
+              <button type="button" class="btn" id="done-btn">I did it</button>
+              <button type="button" class="btn secondary" id="tiny-btn">I did the tiny version</button>
+            </div>
+          </div>
+
+          <!-- Task already done today -->
+          <div class="card task-card" id="done-card" hidden>
+            <div class="day" id="done-day"></div>
+            <p class="task-text">Lantern lit. Well done.</p>
+            <p class="muted" id="done-text"></p>
+            <div class="stack tight">
+              <span class="label">How did it feel?</span>
+              <div class="chips" role="group" aria-label="How did it feel?">
+                <button type="button" class="chip" data-feel="easy">Easy</button>
+                <button type="button" class="chip" data-feel="ok">Okay</button>
+                <button type="button" class="chip" data-feel="hard">Hard</button>
+              </div>
+            </div>
+            <p class="muted next-up" id="next-up"></p>
+            <div class="actions">
+              <button type="button" class="btn link" id="undo-btn">Undo, I didn't finish it</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Goal reached -->
+      <section id="finished" hidden>
+        <div class="stack">
+          <div>
+            <h1>You lit every lantern.</h1>
+            <p class="lede" id="finished-text"></p>
+          </div>
+          <div class="path-box" id="path-finished"></div>
+          <div class="actions">
+            <button type="button" class="btn" id="new-goal-btn">Start a new goal</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button type="button" class="btn link" id="backup-btn">Back up my progress</button>
+      <label class="btn link" for="restore-file">Restore a backup</label>
+      <input type="file" id="restore-file" accept="application/json,.json" class="sr-only">
+      <button type="button" class="btn link" id="reset-btn">Start over</button>
+    </footer>
+  </div>
+
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-body"></p>
+    <div class="actions">
+      <button type="button" class="btn" id="confirm-no" autofocus></button>
+      <button type="button" class="btn danger" id="confirm-yes"></button>
+    </div>
+    <button type="button" class="btn link" id="confirm-extra" hidden></button>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="quotes.js"></script>
+  <script src="path.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
