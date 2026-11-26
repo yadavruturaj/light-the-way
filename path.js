@@ -50,7 +50,10 @@
   function drawLantern(svg, x, y, task, state) {
     const g = el('g', { class: `lantern ${state}`, transform: `translate(${x} ${y})` }, svg);
     const inner = el('g', { class: 'l-inner' }, g);
-    el('circle', { class: 'glow', r: 24, fill: 'url(#ltw-glow)' }, inner);
+    const hard = state.includes('feel-hard');
+    // A hard day gets a bigger ember glow and a small spark: you pushed through.
+    el('circle', { class: 'glow', r: hard ? 32 : 24, fill: hard ? 'url(#ltw-glow-ember)' : 'url(#ltw-glow)' }, inner);
+    if (hard) el('path', { class: 'spark', d: 'M 0 -31 L 1.6 -27.6 L 5 -26 L 1.6 -24.4 L 0 -21 L -1.6 -24.4 L -5 -26 L -1.6 -27.6 Z' }, inner);
     el('line', { class: 'hook', x1: 0, y1: -19, x2: 0, y2: -15 }, inner);
     el('rect', { class: 'cap', x: -6, y: -15, width: 12, height: 3, rx: 1 }, inner);
     el('rect', { class: 'body', x: -8, y: -12, width: 16, height: 20, rx: 5 }, inner);
@@ -58,7 +61,12 @@
     const num = el('text', { class: 'num', y: 26 }, g);
     num.textContent = task.day;
     const title = el('title', {}, g);
-    title.textContent = `Day ${task.day}: ${task.text}`;
+    const feelings = { easy: 'felt easy', ok: 'felt okay', hard: 'felt hard' };
+    let status = 'ahead';
+    if (state.includes('lit')) status = task.feeling ? `done, ${feelings[task.feeling]}` : 'done';
+    else if (state.includes('glimmer')) status = 'tiny step done, waiting for the full task';
+    else if (state.includes('next')) status = "today's task";
+    title.textContent = `Day ${task.day} (${status}): ${task.text}`;
   }
 
   window.LTW_drawPath = function (container, tasks, options) {
@@ -86,6 +94,9 @@
     const grad = el('radialGradient', { id: 'ltw-glow' }, defs);
     el('stop', { offset: '0%', 'stop-color': '#ffc65c', 'stop-opacity': '0.55' }, grad);
     el('stop', { offset: '100%', 'stop-color': '#ffc65c', 'stop-opacity': '0' }, grad);
+    const ember = el('radialGradient', { id: 'ltw-glow-ember' }, defs);
+    el('stop', { offset: '0%', 'stop-color': '#ff8a3d', 'stop-opacity': '0.7' }, ember);
+    el('stop', { offset: '100%', 'stop-color': '#ff8a3d', 'stop-opacity': '0' }, ember);
 
     el('path', { class: 'route', d: startMove + segs.join(' ') }, svg);
     const litSegs = finished ? segs.length : litCount;
@@ -106,7 +117,7 @@
     let nextIndex = -1;
     tasks.forEach((task, i) => {
       let state = 'unlit';
-      if (task.doneOn) state = 'lit';
+      if (task.doneOn) state = task.feeling ? `lit feel-${task.feeling}` : 'lit';
       else if (nextIndex === -1) {
         nextIndex = i;
         // Started with a tiny version: glimmers until the full task is done.

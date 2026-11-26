@@ -188,6 +188,16 @@ pre.prompt {
 .lantern.lit .hook { stroke: var(--ember); }
 .lantern.lit .num { fill: var(--ink); }
 .lantern.lit .glow { opacity: 1; }
+/* Colour by how the task felt. Okay (or no answer) keeps the gold above. */
+.lantern.feel-easy .body { fill: #ffe7ab; stroke: #f0c260; }
+.lantern.feel-easy .cap, .lantern.feel-easy .base { fill: #f0c260; }
+.lantern.feel-easy .hook { stroke: #f0c260; }
+.lantern.feel-easy .glow { opacity: 0.6; }
+.lantern.feel-hard .body { fill: #ff9548; stroke: #e2602a; }
+.lantern.feel-hard .cap, .lantern.feel-hard .base { fill: #e2602a; }
+.lantern.feel-hard .hook { stroke: #e2602a; }
+.lantern .spark { fill: #ffd27a; }
+
 /* Started with a tiny version: pale and softly flickering like a candle */
 .lantern.glimmer .body { fill: rgba(255, 198, 92, 0.3); stroke: var(--lantern); }
 .lantern.glimmer .cap, .lantern.glimmer .base { fill: var(--lantern); }
@@ -200,6 +210,25 @@ pre.prompt {
 .lantern.next .l-inner { animation: pulse 1.8s ease-in-out infinite; }
 .lantern .l-inner { transform-box: fill-box; transform-origin: center; }
 .lantern.just .l-inner { animation: flare 0.9s ease-out; }
+
+/* Legend under the path */
+.legend {
+  list-style: none;
+  margin: -8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.legend li { display: flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 10px; height: 13px; border-radius: 4px; border: 1.5px solid transparent; }
+.sw-easy { background: #ffe7ab; border-color: #f0c260; }
+.sw-ok { background: var(--lantern); border-color: var(--ember); }
+.sw-hard { background: #ff9548; border-color: #e2602a; box-shadow: 0 0 6px 1px rgba(255, 138, 61, 0.7); }
+.sw-glimmer { background: rgba(255, 198, 92, 0.3); border-color: var(--lantern); }
+.sw-next { border: 1.5px dashed var(--lantern); }
 
 .flag .pole { stroke: var(--muted); stroke-width: 2; }
 .flag .cloth { fill: var(--muted); }
