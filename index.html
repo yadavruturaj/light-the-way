@@ -179,6 +179,20 @@
               <button type="button" class="btn link" id="undo-btn">Undo, I didn't do it</button>
             </div>
           </div>
+
+          <!-- Path is paused -->
+          <div class="card task-card" id="paused-card" hidden>
+            <div class="day">Paused</div>
+            <p class="task-text">Your path is resting.</p>
+            <p class="muted" id="paused-text"></p>
+            <p class="nudge checkin" id="checkin" hidden>It's been two weeks. Ready to light the next lantern?</p>
+            <div class="actions">
+              <button type="button" class="btn" id="resume-btn">Resume my path</button>
+              <button type="button" class="btn secondary" id="rest-more-btn" hidden>Rest a little longer</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn link pause-link" id="pause-btn">Need a break? Pause my path</button>
         </div>
       </section>
 
@@ -213,6 +227,21 @@
       <button type="button" class="btn danger" id="confirm-yes"></button>
     </div>
     <button type="button" class="btn link" id="confirm-extra" hidden></button>
+  </dialog>
+
+  <dialog id="pause-dialog" aria-labelledby="pause-title">
+    <h2 id="pause-title">Pause your path?</h2>
+    <p>Life happens. While you rest, missed days don't count against your streak, and your next task waits for you.</p>
+    <div class="field">
+      <label for="pause-until">Rest until <span class="hint">(optional)</span></label>
+      <input type="date" id="pause-until">
+      <p class="error" id="pause-error" hidden>Choose today or a later date.</p>
+      <p class="hint">Leave it empty to resume whenever you're ready.</p>
+    </div>
+    <div class="actions pause-actions">
+      <button type="button" class="btn" id="pause-confirm">Pause</button>
+      <button type="button" class="btn secondary" id="pause-cancel">Cancel</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

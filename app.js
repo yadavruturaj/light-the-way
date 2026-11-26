@@ -17,10 +17,22 @@
     const [y, m, d] = key.split('-').map(Number);
     return dayKey(new Date(y, m - 1, d + n));
   }
+  function toDate(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function daysBetween(a, b) {
+    return Math.round((toDate(b) - toDate(a)) / 86400000);
+  }
+  function fmtDay(key) {
+    return toDate(key).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  }
 
   // ---------- Saving and loading ----------
   function freshState() {
-    return { goal: null, tasks: [], draft: null, lastQuote: -1 };
+    // pause: the current rest, if any. pauses: past rests, so those days
+    // never count as missed for the streak.
+    return { goal: null, tasks: [], draft: null, lastQuote: -1, pause: null, pauses: [] };
   }
   // Bring data saved by older versions up to date.
   // v1 marked tiny versions as finished ("kind: tiny"); those stay finished.
@@ -155,8 +167,32 @@
     return dates;
   }
 
+  // ---------- Pause ----------
+  function isPausedOn(day) {
+    const p = state.pause;
+    if (p && day >= p.from && (!p.until || day <= p.until)) return true;
+    return (state.pauses || []).some((r) => day >= r.from && day <= r.to);
+  }
+  function pausedNow() {
+    return !!state.pause && isPausedOn(dayKey());
+  }
+  function endPause(lastRestDay) {
+    const p = state.pause;
+    if (lastRestDay >= p.from) state.pauses.push({ from: p.from, to: lastRestDay });
+    state.pause = null;
+  }
+  // A pause with an end date finishes by itself.
+  function checkPauseExpiry() {
+    if (state.pause && state.pause.until && dayKey() > state.pause.until) {
+      endPause(state.pause.until);
+      saveState();
+      toast('Welcome back. Your next lantern is waiting.');
+    }
+  }
+
   // Streak with grace: one missed day keeps the streak alive,
-  // two missed days in a row end it. Today doesn't count as missed yet.
+  // two missed days in a row end it. Today doesn't count as missed yet,
+  // and paused days are skipped.
   function streak() {
     const dates = doneDates();
     const today = dayKey();
@@ -166,7 +202,7 @@
     let misses = 0;
     while (day >= startedOn) {
       if (dates.has(day)) { count++; misses = 0; }
-      else if (++misses >= 2) break;
+      else if (!isPausedOn(day) && ++misses >= 2) break;
       day = shiftDay(day, -1);
     }
     return count;
@@ -186,6 +222,7 @@
       else { fillSetup(); showView('setup'); }
       return;
     }
+    checkPauseExpiry();
     if (state.tasks.every((t) => t.doneOn)) { renderFinished(); showView('finished'); return; }
     renderToday(options);
     showView('today');
@@ -331,10 +368,31 @@
 
     window.LTW_drawPath($('path-today'), tasks, { justLit: opts.justLit });
 
+    // Paused: show the resting card instead of today's task.
+    const paused = pausedNow();
+    $('paused-card').hidden = !paused;
+    $('pause-btn').hidden = paused;
+    if (paused) {
+      const p = state.pause;
+      const waiting = next ? `Day ${next.day}` : 'Your next task';
+      $('paused-text').textContent = p.until
+        ? `Resting since ${fmtDay(p.from)}, until ${fmtDay(p.until)}. Rest days don't count against your streak, and ${waiting} will be waiting.`
+        : `Resting since ${fmtDay(p.from)}. Rest days don't count against your streak. Resume whenever you're ready.`;
+      // Soft check-in every two weeks of rest.
+      const checkIn = daysBetween(p.checkedAt || p.from, today) >= 14;
+      $('checkin').hidden = !checkIn;
+      $('rest-more-btn').hidden = !checkIn;
+      $('nudge').hidden = true;
+      $('task-card').hidden = true;
+      $('done-card').hidden = true;
+      return;
+    }
+
     // "Don't miss twice" nudge
     const dates = doneDates();
     const yesterday = shiftDay(today, -1);
-    const missedYesterday = !dates.has(yesterday) && yesterday >= state.goal.startedOn && lit > 0;
+    const missedYesterday = !dates.has(yesterday) && !isPausedOn(yesterday) &&
+      yesterday >= state.goal.startedOn && dates.size > 0;
     $('nudge').hidden = !(missedYesterday && !doneToday && !tinyToday);
     $('nudge').textContent = "You missed yesterday, and that's okay. Just don't miss twice. Even the tiny version counts today.";
 
@@ -376,7 +434,7 @@
   function markDone(kind) {
     const today = dayKey();
     const next = state.tasks.find((t) => !t.doneOn);
-    if (!next || state.tasks.some((t) => t.doneOn === today)) return;
+    if (pausedNow() || !next || state.tasks.some((t) => t.doneOn === today)) return;
     const index = state.tasks.indexOf(next);
     if (kind === 'tiny') {
       if (next.tinyDays.includes(today)) return;
@@ -423,6 +481,42 @@
     saveState();
     render();
     toast(`Lantern ${tiny.day} is waiting for you.`);
+  });
+
+  // Pause and resume
+  $('pause-btn').addEventListener('click', () => {
+    const input = $('pause-until');
+    input.value = '';
+    input.min = dayKey();
+    $('pause-error').hidden = true;
+    $('pause-dialog').showModal();
+  });
+  $('pause-cancel').addEventListener('click', () => $('pause-dialog').close());
+  $('pause-until').addEventListener('input', () => { $('pause-error').hidden = true; });
+  $('pause-confirm').addEventListener('click', () => {
+    const today = dayKey();
+    const until = $('pause-until').value || null;
+    if (until && until < today) {
+      $('pause-error').hidden = false;
+      return;
+    }
+    state.pause = { from: today, until, checkedAt: today };
+    saveState();
+    $('pause-dialog').close();
+    render();
+    toast(until ? `Paused until ${fmtDay(until)}. Rest well.` : 'Path paused. Rest well.');
+  });
+  $('resume-btn').addEventListener('click', () => {
+    endPause(shiftDay(dayKey(), -1));
+    saveState();
+    render();
+    toast('Welcome back. Your next lantern is waiting.');
+  });
+  $('rest-more-btn').addEventListener('click', () => {
+    state.pause.checkedAt = dayKey();
+    saveState();
+    render();
+    toast("Take the time you need. I'll check in again in two weeks.");
   });
 
   // Goal reached

@@ -79,7 +79,7 @@ h2 { font-family: var(--display); font-weight: 700; font-size: 1.3rem; margin: 0
 /* Form controls */
 .field { display: flex; flex-direction: column; gap: 6px; }
 label { font-weight: 600; font-size: 0.92rem; }
-input[type="text"], textarea, select {
+input[type="text"], input[type="date"], textarea, select {
   width: 100%;
   font: inherit;
   color: var(--ink);
@@ -301,6 +301,10 @@ dialog {
 dialog::backdrop { background: rgba(5, 8, 20, 0.72); }
 dialog p { color: var(--muted); margin: 0 0 18px; }
 #confirm-extra { margin-top: 10px; }
+dialog .field p { margin: 0; }
+.pause-actions { margin-top: 18px; }
+.pause-link { align-self: center; margin-top: -6px; }
+.checkin { margin: 10px 0 12px; }
 
 /* Toast */
 .toast {
