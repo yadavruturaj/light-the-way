@@ -106,8 +106,12 @@
     let nextIndex = -1;
     tasks.forEach((task, i) => {
       let state = 'unlit';
-      if (task.doneOn) state = task.kind === 'tiny' ? 'lit tiny' : 'lit';
-      else if (nextIndex === -1) { state = 'next'; nextIndex = i; }
+      if (task.doneOn) state = 'lit';
+      else if (nextIndex === -1) {
+        nextIndex = i;
+        // Started with a tiny version: glimmers until the full task is done.
+        state = task.tinyDays && task.tinyDays.length ? 'glimmer' : 'next';
+      }
       if (i === opts.justLit) state += ' just';
       drawLantern(svg, lanterns[i][0], lanterns[i][1], task, state);
     });

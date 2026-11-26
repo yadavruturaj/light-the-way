@@ -22,10 +22,19 @@
   function freshState() {
     return { goal: null, tasks: [], draft: null, lastQuote: -1 };
   }
+  // Bring data saved by older versions up to date.
+  // v1 marked tiny versions as finished ("kind: tiny"); those stay finished.
+  function migrate(s) {
+    (s.tasks || []).forEach((t) => {
+      if (!Array.isArray(t.tinyDays)) t.tinyDays = t.kind === 'tiny' && t.doneOn ? [t.doneOn] : [];
+      delete t.kind;
+    });
+    return s;
+  }
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? { ...freshState(), ...JSON.parse(raw) } : freshState();
+      return raw ? migrate({ ...freshState(), ...JSON.parse(raw) }) : freshState();
     } catch (e) {
       return freshState();
     }
@@ -136,8 +145,14 @@
   }
 
   // ---------- Progress maths ----------
+  // Days the user showed up: finished a task or did a tiny version.
   function doneDates() {
-    return new Set(state.tasks.filter((t) => t.doneOn).map((t) => t.doneOn));
+    const dates = new Set();
+    state.tasks.forEach((t) => {
+      if (t.doneOn) dates.add(t.doneOn);
+      (t.tinyDays || []).forEach((d) => dates.add(d));
+    });
+    return dates;
   }
 
   // Streak with grace: one missed day keeps the streak alive,
@@ -287,7 +302,7 @@
       text: t.text,
       tiny: t.tiny,
       doneOn: null,
-      kind: null,
+      tinyDays: [],
       feeling: null
     }));
     state.draft = null;
@@ -305,6 +320,7 @@
     const lit = tasks.filter((t) => t.doneOn).length;
     const doneToday = tasks.find((t) => t.doneOn === today);
     const next = tasks.find((t) => !t.doneOn);
+    const tinyToday = !doneToday && next && next.tinyDays.includes(today) ? next : null;
 
     $('goal-title').textContent = state.goal.goal;
     $('goal-why').textContent = state.goal.why ? `Why: ${state.goal.why}` : '';
@@ -319,24 +335,32 @@
     const dates = doneDates();
     const yesterday = shiftDay(today, -1);
     const missedYesterday = !dates.has(yesterday) && yesterday >= state.goal.startedOn && lit > 0;
-    $('nudge').hidden = !(missedYesterday && !doneToday);
+    $('nudge').hidden = !(missedYesterday && !doneToday && !tinyToday);
     $('nudge').textContent = "You missed yesterday, and that's okay. Just don't miss twice. Even the tiny version counts today.";
 
-    $('task-card').hidden = !!doneToday;
-    $('done-card').hidden = !doneToday;
+    $('task-card').hidden = !!(doneToday || tinyToday);
+    $('done-card').hidden = !(doneToday || tinyToday);
+    $('feel-group').hidden = !doneToday;
+    $('finish-full-btn').hidden = !tinyToday;
 
     if (doneToday) {
       $('done-day').textContent = `Day ${doneToday.day} done`;
-      $('done-text').textContent = doneToday.kind === 'tiny'
-        ? `You did the tiny version of: ${doneToday.text}`
-        : doneToday.text;
+      $('done-title').textContent = 'Lantern lit. Well done.';
+      $('done-text').textContent = doneToday.text;
       document.querySelectorAll('[data-feel]').forEach((b) => {
         b.setAttribute('aria-pressed', String(b.dataset.feel === doneToday.feeling));
       });
       $('next-up').textContent = next ? `Tomorrow: ${next.text}` : '';
       $('next-up').hidden = !next;
+    } else if (tinyToday) {
+      $('done-day').textContent = `Day ${tinyToday.day} · tiny step`;
+      $('done-title').textContent = 'Tiny step done. Your lantern is glowing softly.';
+      $('done-text').textContent = `It lights up fully when you finish: ${tinyToday.text}`;
+      $('next-up').textContent = 'Tomorrow: the full version of this task will be waiting.';
+      $('next-up').hidden = false;
     } else if (next) {
       $('task-day').textContent = `Day ${next.day} of ${tasks.length}`;
+      $('task-started').hidden = !next.tinyDays.length;
       $('task-text').textContent = next.text;
       $('task-tiny').textContent = next.tiny ? `Hard day? Tiny version: ${next.tiny}` : '';
       $('task-tiny').hidden = !next.tiny;
@@ -346,17 +370,30 @@
     }
   }
 
+  // A full task lights the lantern. A tiny version keeps the habit going
+  // (it counts for the streak) but the lantern only glimmers until the
+  // full task is done, so the same task waits for tomorrow.
   function markDone(kind) {
+    const today = dayKey();
     const next = state.tasks.find((t) => !t.doneOn);
-    if (!next || state.tasks.some((t) => t.doneOn === dayKey())) return;
-    next.doneOn = dayKey();
-    next.kind = kind;
+    if (!next || state.tasks.some((t) => t.doneOn === today)) return;
+    const index = state.tasks.indexOf(next);
+    if (kind === 'tiny') {
+      if (next.tinyDays.includes(today)) return;
+      next.tinyDays.push(today);
+      saveState();
+      render({ justLit: index });
+      toast(`Tiny step done. Lantern ${next.day} is glowing softly.`);
+      return;
+    }
+    next.doneOn = today;
     saveState();
-    render({ justLit: state.tasks.indexOf(next) });
+    render({ justLit: index });
     toast(`Lantern ${next.day} is lit.`);
   }
   $('done-btn').addEventListener('click', () => markDone('full'));
   $('tiny-btn').addEventListener('click', () => markDone('tiny'));
+  $('finish-full-btn').addEventListener('click', () => markDone('full'));
 
   document.querySelectorAll('[data-feel]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -370,20 +407,28 @@
   });
 
   $('undo-btn').addEventListener('click', () => {
-    const t = state.tasks.find((x) => x.doneOn === dayKey());
-    if (!t) return;
-    t.doneOn = null;
-    t.kind = null;
-    t.feeling = null;
+    const today = dayKey();
+    const done = state.tasks.find((x) => x.doneOn === today);
+    if (done) {
+      done.doneOn = null;
+      done.feeling = null;
+      saveState();
+      render();
+      toast(`Lantern ${done.day} is waiting for you.`);
+      return;
+    }
+    const tiny = state.tasks.find((x) => !x.doneOn && x.tinyDays.includes(today));
+    if (!tiny) return;
+    tiny.tinyDays = tiny.tinyDays.filter((d) => d !== today);
     saveState();
     render();
-    toast(`Lantern ${t.day} is waiting for you.`);
+    toast(`Lantern ${tiny.day} is waiting for you.`);
   });
 
   // Goal reached
   function renderFinished() {
     const tasks = state.tasks;
-    const tiny = tasks.filter((t) => t.kind === 'tiny').length;
+    const tiny = tasks.filter((t) => t.tinyDays && t.tinyDays.length).length;
     const first = state.goal.startedOn;
     const last = tasks.map((t) => t.doneOn).sort().pop();
     const [y1, m1, d1] = first.split('-').map(Number);
@@ -391,7 +436,7 @@
     const span = Math.round((new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1)) / 86400000) + 1;
     $('finished-text').textContent =
       `"${state.goal.goal}": ${plural(tasks.length, 'lantern')} lit over ${plural(span, 'day')}` +
-      (tiny ? `, including ${tiny} tiny version${tiny === 1 ? '' : 's'} on hard days.` : '.') +
+      (tiny ? `. Tiny steps kept ${plural(tiny, 'task')} going on hard days.` : '.') +
       ' That is what showing up looks like.';
     window.LTW_drawPath($('path-finished'), tasks);
   }
@@ -434,7 +479,7 @@
       });
       if (ok !== true) return;
     }
-    state = { ...freshState(), ...incoming };
+    state = migrate({ ...freshState(), ...incoming });
     saveState();
     render();
     toast('Backup restored.');

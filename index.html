@@ -143,6 +143,7 @@
           <!-- Task not done yet today -->
           <div class="card task-card" id="task-card">
             <div class="day" id="task-day"></div>
+            <p class="started-note" id="task-started" hidden>You started this with the tiny version. Ready for the full one?</p>
             <p class="task-text" id="task-text"></p>
             <p class="tiny-box" id="task-tiny"></p>
             <p class="plan-when" id="task-when"></p>
@@ -155,9 +156,9 @@
           <!-- Task already done today -->
           <div class="card task-card" id="done-card" hidden>
             <div class="day" id="done-day"></div>
-            <p class="task-text">Lantern lit. Well done.</p>
+            <p class="task-text" id="done-title">Lantern lit. Well done.</p>
             <p class="muted" id="done-text"></p>
-            <div class="stack tight">
+            <div class="stack tight" id="feel-group">
               <span class="label">How did it feel?</span>
               <div class="chips" role="group" aria-label="How did it feel?">
                 <button type="button" class="chip" data-feel="easy">Easy</button>
@@ -167,7 +168,8 @@
             </div>
             <p class="muted next-up" id="next-up"></p>
             <div class="actions">
-              <button type="button" class="btn link" id="undo-btn">Undo, I didn't finish it</button>
+              <button type="button" class="btn" id="finish-full-btn" hidden>I did the full task too</button>
+              <button type="button" class="btn link" id="undo-btn">Undo, I didn't do it</button>
             </div>
           </div>
         </div>

@@ -188,8 +188,13 @@ pre.prompt {
 .lantern.lit .hook { stroke: var(--ember); }
 .lantern.lit .num { fill: var(--ink); }
 .lantern.lit .glow { opacity: 1; }
-.lantern.tiny .body { fill: #ffe0a3; }
-.lantern.tiny .glow { opacity: 0.55; }
+/* Started with a tiny version: pale and softly flickering like a candle */
+.lantern.glimmer .body { fill: rgba(255, 198, 92, 0.3); stroke: var(--lantern); }
+.lantern.glimmer .cap, .lantern.glimmer .base { fill: var(--lantern); }
+.lantern.glimmer .hook { stroke: var(--lantern); }
+.lantern.glimmer .num { fill: var(--ink); }
+.lantern.glimmer .glow { opacity: 0.35; }
+.lantern.glimmer .l-inner { animation: flicker 3.6s ease-in-out infinite; }
 
 .lantern.next .body { stroke: var(--lantern); stroke-width: 2; stroke-dasharray: 3 3; }
 .lantern.next .l-inner { animation: pulse 1.8s ease-in-out infinite; }
@@ -202,6 +207,13 @@ pre.prompt {
 .flag.won .pole { stroke: var(--ember); }
 
 @keyframes pulse { 50% { opacity: 0.45; } }
+@keyframes flicker {
+  0%, 100% { opacity: 0.6; }
+  18% { opacity: 0.85; }
+  32% { opacity: 0.68; }
+  55% { opacity: 0.92; }
+  78% { opacity: 0.62; }
+}
 @keyframes flare {
   0% { transform: scale(0.5); opacity: 0.3; }
   60% { transform: scale(1.25); opacity: 1; }
@@ -214,6 +226,7 @@ pre.prompt {
 .task-text { font-family: var(--display); font-weight: 500; font-size: 1.35rem; line-height: 1.3; margin: 4px 0 6px; text-wrap: pretty; }
 .tiny-box { color: var(--muted); font-size: 0.92rem; margin: 0; }
 .plan-when { color: var(--muted); font-size: 0.85rem; margin: 2px 0 12px; }
+.started-note { color: var(--lantern); font-size: 0.92rem; margin: 2px 0 0; }
 .next-up { margin-top: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
