@@ -1,0 +1,17 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and tool settings
+.vscode/
+.idea/
+.claude/
+
+# Logs and secrets
+*.log
+.env
+.env.*
+
+# Personal backups exported from the app
+light-the-way-backup-*.json
