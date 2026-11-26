@@ -294,7 +294,7 @@
     saveState();
     render();
     window.scrollTo(0, 0);
-    toast('Ganpati Bappa Morya! Your path begins.');
+    toast('Your path begins. Light your first lantern today.');
   });
 
   // Daily view
