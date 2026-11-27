@@ -50,9 +50,22 @@ No build step and no dependencies. Open `index.html` in a browser.
 
 ## Roadmap
 
+**App**
 - Multiple goals
+- Edit or skip a task from the plan
+- Keep finished goals as a history instead of erasing them
+- Suggest the tiny version or a lighter plan after three "hard" days in a row
+- Gentle reminder to back up every couple of weeks
 - Weekly review
 - Calendar reminders
+- Works offline once installed
+- Hindi and Marathi
 - Accounts and sync across devices
 - Reminder notifications and emails
 - Claude suggestions built into the app
+
+**Project**
+- Screenshots in this README
+- A license
+- Automated tests for the plan parser and the streak rules
+- Roadmap items as GitHub Issues
